@@ -1142,6 +1142,17 @@
           _0x1a5b53 = sessionStorage["getItem"](_0x5b2825);
         if (_0x1a5b53 !== null) return JSON["parse"](_0x1a5b53);
         const _0x2d72c2 = typeof googleAccounts["dummy"] === STR['xEPqQ'] ? googleAccounts['main'] : googleAccounts["dummy"];
+        // Phase 4: prueba el backend local primero (BACKEND_URL de index.html,
+        // '' = mismo origen). Cualquier fallo se ignora y se sigue con los
+        // servidores del enlace, así los enlaces de terceros siguen funcionando.
+        if (typeof BACKEND_URL !== "undefined" && BACKEND_URL !== null) {
+          try {
+            const _0x9d3f1a = await _0x2d72c2["serverRequest"](BACKEND_URL, this['id']);
+            return sessionStorage["setItem"](_0x5b2825, JSON["stringify"](_0x9d3f1a)), this["knownGoodServer"] = BACKEND_URL, _0x9d3f1a;
+          } catch (_0x8e4b2c) {
+            console['warn']("local backend failed, trying link servers", _0x8e4b2c);
+          }
+        }
         for await (const _0x5736cf of this["getDecryptionServer"]()) {
           let _0x4b1473;
           try {
@@ -1171,6 +1182,15 @@
         if (typeof googleAccounts["dummy"] !== "undefined") throw Error("Copying through the dummy acc not implemented yet");
         const _0x51c69d = STR["biMEs"](typeof googleAccounts["dummy"], STR["xEPqQ"]) ? googleAccounts["main"] : googleAccounts["dummy"],
           _0xd59c98 = _0x1aeccc['map'](_0x5a17d2 => _0x5a17d2['id']);
+        // Phase 4: backend local primero; cualquier fallo -> servidores del enlace.
+        if (typeof BACKEND_URL !== "undefined" && BACKEND_URL !== null) {
+          try {
+            const _0x7f2a9d = await _0x51c69d["serverRequest"](BACKEND_URL, this['id'], _0xd59c98);
+            return this["knownGoodServer"] = BACKEND_URL, _0x7f2a9d;
+          } catch (_0x6b4e1f) {
+            console["warn"]("local backend failed, trying link servers", _0x6b4e1f);
+          }
+        }
         for await (const _0x95a6c9 of this["getDecryptionServer"]()) {
           let _0x2f586a;
           try {

@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cacheKey, cacheGet, cacheSet } from './cache.js';
 import { VERSION, success, fail, encode, handleInfo, handleClone } from './protocol.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ENCRYPT_HTML_TEMPLATE = fs.readFileSync(
@@ -49,7 +50,12 @@ export function mountProtocolRoutes(app) {
   };
 
   app.post('/info', wrap(async (req, res) => {
-    success(res, await handleInfo(req.body));
+    const key = cacheKey(String(req.body?.folder || ''), req.body?.pageToken);
+    const cached = cacheGet(key);
+    if (cached) return success(res, cached);
+    const data = await handleInfo(req.body);
+    cacheSet(key, data);
+    success(res, data);
   }));
 
   app.post('/clone', wrap(async (req, res) => {

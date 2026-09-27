@@ -6,7 +6,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { VERSION, success, fail, encode, handleInfo, handleClone } from './protocol.js';
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ENCRYPT_HTML_TEMPLATE = fs.readFileSync(
   path.join(__dirname, '..', 'public', 'templates', 'encrypt.html.template'),
@@ -67,6 +66,56 @@ export function mountProtocolRoutes(app) {
   app.get('/encrypt', (req, res) => {
     res.type('html').send(buildEncryptPage(req));
   });
+
+  // ---- OAuth: el intercambio código<->token vive en el servidor ----
+  // El front (public/main.js) llama aquí en vez de a oauth2.googleapis.com.
+  // Así el client_secret nunca viaja al navegador.
+
+  // client_id público para construir la URL de consentimiento en el front
+  app.get('/oauth/config', (req, res) => {
+    res.json({ clientId: process.env.GOOGLE_CLIENT_ID || '' });
+  });
+
+  app.post('/oauth/token', wrap(async (req, res) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      return fail(res, 'OAuth not configured on server (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET)', 501);
+    }
+    const body = req.body || {};
+    const params = new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+    });
+    if (body.grant_type === 'refresh_token' && body.refresh_token) {
+      params.set('refresh_token', body.refresh_token);
+      params.set('grant_type', 'refresh_token');
+    } else if (body.code) {
+      params.set('code', body.code);
+      params.set('grant_type', 'authorization_code');
+      if (body.redirect_uri) params.set('redirect_uri', body.redirect_uri);
+    } else {
+      return fail(res, 'Missing code or refresh_token', 400);
+    }
+
+    const tokenUrl = process.env.OAUTH_TOKEN_URL || 'https://oauth2.googleapis.com/token';
+    const r = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+    const text = await r.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { error: text };
+    }
+    if (!r.ok || data.error) {
+      return fail(res, data.error_description || data.error || text, r.status >= 400 ? r.status : 400);
+    }
+    res.status(200).json(data);
+  }));
 
   // Malformed JSON bodies -> protocol-shaped error (matches "Invalid json data")
   // eslint-disable-next-line no-unused-vars

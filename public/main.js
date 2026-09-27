@@ -414,18 +414,36 @@
       });
     }
     async ["getTokens"](_0x414354, _0x223fe3) {
-      const _0xfd1a4b = new URLSearchParams({
-        'client_id': oauthClientId,
-        'client_secret': oauthClientSecret
-      });
-      _0x223fe3 === !![] ? (_0xfd1a4b['set']("refresh_token", _0x414354), _0xfd1a4b["set"]("grant_type", STR["BOXNv"])) : (_0xfd1a4b['set']("code", _0x414354), _0xfd1a4b["set"]("grant_type", 'authorization_code'), _0xfd1a4b["set"](STR["GDCPt"], oauthRedirectUri));
-      const _0x338e18 = await fetch("https://oauth2.googleapis.com/token", {
-        'method': "POST",
-        'body': _0xfd1a4b["toString"](),
-        'headers': {
-          'Content-Type': STR["QhPwC"]
-        }
-      });
+      // Phase 3: el intercambio de tokens pasa por el backend (/oauth/token),
+      // que inyecta client_id/secret desde variables de entorno. El secreto
+      // ya no viaja al navegador. Si no hay backend (hosting estático legacy),
+      // se conserva el intercambio directo con Google como fallback.
+      const _0xfd1a4b = {};
+      _0x223fe3 === !![] ? (_0xfd1a4b["refresh_token"] = _0x414354, _0xfd1a4b["grant_type"] = STR["BOXNv"]) : (_0xfd1a4b["code"] = _0x414354, _0xfd1a4b["grant_type"] = 'authorization_code', _0xfd1a4b[STR["GDCPt"]] = oauthRedirectUri);
+      const _0x3b6ac8 = typeof BACKEND_URL !== "undefined" ? BACKEND_URL : "";
+      let _0x338e18;
+      try {
+        _0x338e18 = await fetch(_0x3b6ac8 + "/oauth/token", {
+          'method': "POST",
+          'body': JSON["stringify"](_0xfd1a4b),
+          'headers': {
+            'Content-Type': "application/json"
+          }
+        });
+      } catch (_0x4d2e91) {
+        const _0x5a1b2c = new URLSearchParams({
+          'client_id': oauthClientId,
+          'client_secret': oauthClientSecret
+        });
+        _0x223fe3 === !![] ? (_0x5a1b2c['set']("refresh_token", _0x414354), _0x5a1b2c["set"]("grant_type", STR["BOXNv"])) : (_0x5a1b2c['set']("code", _0x414354), _0x5a1b2c["set"]("grant_type", 'authorization_code'), _0x5a1b2c["set"](STR["GDCPt"], oauthRedirectUri));
+        _0x338e18 = await fetch("https://oauth2.googleapis.com/token", {
+          'method': "POST",
+          'body': _0x5a1b2c["toString"](),
+          'headers': {
+            'Content-Type': STR["QhPwC"]
+          }
+        });
+      }
       if (_0x338e18['ok']) {
         const _0x3bc1e6 = await _0x338e18["json"]();
         this["accessToken"] = _0x3bc1e6["access_token"], this["expires"] = new Date(), this['expires']["setSeconds"](this["expires"]["getSeconds"]() + _0x3bc1e6["expires_in"] - 0x3c), !_0x223fe3 && (this["token"] = _0x3bc1e6["refresh_token"]);
@@ -1277,6 +1295,13 @@
     _0x416847 = defaultClientSecret || decryptLocal("blAARhoJFy8WZH06Qy9WNhsIAS1WOSk4", STORAGE_KEY);
   let oauthClientId = _0x4f7fbc,
     oauthClientSecret = _0x416847;
+  // Phase 3: si hay backend, usa su client_id (viene de GOOGLE_CLIENT_ID en
+  // el servidor). Si no hay backend, se conserva el de la página.
+  try {
+    const _0x3b6ac8 = typeof BACKEND_URL !== "undefined" ? BACKEND_URL : "";
+    const _0x5e8f2a = await (await fetch(_0x3b6ac8 + "/oauth/config"))["json"]();
+    if (_0x5e8f2a && _0x5e8f2a["clientId"]) oauthClientId = _0x5e8f2a["clientId"];
+  } catch (_0x7c1d3b) {}
   const oauthRedirectUri = "http://127.0.0.1:53683/",
     myFilesBrowser = new FolderBrowser(STR["eDgEQ"]($, '#my_files\x20.file_list'), 'my');
   myFilesBrowser["onFolderClick"] = _0x2e501c, myFilesBrowser["addButton"]("title", "Add dir", _0x23b7eb), myFilesBrowser["addButton"]("title", 'Reload', _0xffc16d), myFilesBrowser['addButton']("title", "Select", () => $("#destination_selection")["modal"]("show")), myFilesBrowser["addButton"]('details', "Share", _0x30446e, [STR["DoSsN"]]), myFilesBrowser["addButton"](STR["cwUqk"], "Trash", _0x44467e, [STR["kNGCa"]]), myFilesBrowser["addButton"]("details", "Delete", _0x23267e, [STR["nGesa"]]);

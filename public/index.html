@@ -14,7 +14,12 @@ const encryptedIdPrefix = '';
 
 /* if you don't want to use rclone OAuth credentials you can always use your own */
 const defaultClientId = '';
-const defaultClientSecret = '';
+const defaultClientSecret = ''; // legacy: el secreto ahora vive en el servidor (GOOGLE_CLIENT_SECRET)
+
+/* URL base del backend Node. '' = mismo origen (cuando el backend sirve esta
+página). Si sirves el front desde otro sitio, pon aquí la URL del backend,
+por ejemplo 'http://localhost:3000'. */
+const BACKEND_URL = '';
 
   </script>
   <meta charset="utf-8">

@@ -1,0 +1,28 @@
+{
+  "name": "gd-efc",
+  "version": "1.0.0",
+  "description": "**Google Drive — encrypted folder copy.** Share Google Drive folders through encrypted links that hide the real folder ID.",
+  "main": "main.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test tests/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/7Silvah/gd-efc.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/7Silvah/gd-efc/issues"
+  },
+  "homepage": "https://github.com/7Silvah/gd-efc#readme",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1"
+  },
+  "type": "module"
+}

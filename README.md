@@ -34,6 +34,11 @@ raw HTTPS/HTTP URL.
   generated decrypter) can resolve your encrypted links.
 - `main.obf.js` is the obfuscated copy engine; `common.js` holds the shared
   AES-GCM encrypt/decrypt helpers.
+- `main.js` is the **deobfuscated, editable source** of `main.obf.js`
+  (regenerated 2026-09-27; `node --check` passes). To change copy behavior,
+  edit `main.js`, then re-obfuscate with
+  [javascript-obfuscator](https://github.com/javascript-obfuscator/javascript-obfuscator)
+  to regenerate `main.obf.js`, which is what `index.html` loads.
 
 ## Stack
 

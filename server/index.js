@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mountProtocolRoutes } from './routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -29,6 +30,7 @@ export function createApp() {
 
   // Las rutas del protocolo (/info, /clone, /encrypt, /oauth/*) se montan aquí
   // en las siguientes fases.
+  mountProtocolRoutes(app);
 
   // Frontend estático (index.html, build.html, main.js, ...)
   app.use(express.static(path.join(ROOT, 'public')));
@@ -37,7 +39,12 @@ export function createApp() {
 }
 
 const app = createApp();
-const port = Number(process.env.PORT || 3000);
-app.listen(port, () => {
-  console.log(`gd-efc server listening on http://localhost:${port}`);
-});
+
+// Solo escucha cuando se ejecuta directamente (node server/index.js),
+// no cuando se importa desde los tests.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const port = Number(process.env.PORT || 3000);
+  app.listen(port, () => {
+    console.log(`gd-efc server listening on http://localhost:${port}`);
+  });
+}

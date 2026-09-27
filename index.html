@@ -401,6 +401,15 @@ https://drive.google.com/open?id=&lt;folder id&gt;</pre></code>
     }
   </script>
   <script src="common.js"></script>
-  <script src="main.obf.js"></script>
+  <script>
+    // Dev/prod loader: ?dev=1 loads the readable main.js (development);
+    // otherwise loads main.obf.js (production). document.write keeps the
+    // synchronous load order identical to a static <script> tag.
+    // After editing main.js, re-obfuscate it to regenerate main.obf.js.
+    (function () {
+      var dev = /[?&]dev=1(?:&|$)/.test(window.location.search);
+      document.write('<script src="' + (dev ? 'main.js' : 'main.obf.js') + '"><\/script>');
+    })();
+  </script>
 </body>
 </html>

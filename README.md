@@ -40,6 +40,12 @@ raw HTTPS/HTTP URL.
   [javascript-obfuscator](https://github.com/javascript-obfuscator/javascript-obfuscator)
   to regenerate `main.obf.js`, which is what `index.html` loads.
 
+## Development
+
+Open `index.html?dev=1` to run against the readable `main.js` instead of the
+obfuscated `main.obf.js`. Production (no query param) keeps loading
+`main.obf.js`, so existing behavior is unchanged.
+
 ## Stack
 
 Vanilla JS + jQuery, Bootstrap 4, JSZip, Cloudflare Workers / PHP templates.

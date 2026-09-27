@@ -1,0 +1,16 @@
+services:
+  gd-efc:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - CACHE_DB=/data/cache.db
+    volumes:
+      - gd-efc-data:/data
+    restart: unless-stopped
+
+volumes:
+  gd-efc-data:

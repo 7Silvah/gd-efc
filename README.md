@@ -3,50 +3,83 @@
 **Google Drive — encrypted folder copy.** Share Google Drive folders through
 encrypted links that hide the real folder ID.
 
+> **Node.js edition.** The whole stack is now pure JavaScript: a Node 20 +
+> Express backend plus the original static frontend. See `README.txt`
+> (Spanish) for the full setup and testing guide.
+
 ## How it works
 
 1. A folder ID is encrypted with **AES-256-GCM** (WebCrypto, random 12-byte IV).
 2. The encrypted ID is shared as a link instead of the real folder ID.
-3. A *decrypt server* resolves the encrypted ID back to the real folder, and the
-   visitor copies the folder into their own Google account.
+3. The Node backend resolves the encrypted ID back to the real folder
+   (`POST /info`), and the visitor copies the folder into their own Google
+   account (`POST /clone`).
+4. OAuth code↔token exchange happens server-side (`POST /oauth/token`), so
+   the `client_secret` never reaches the browser.
 
-## Pages
+## Layout
 
-| File | Purpose |
+| Path | Purpose |
 |---|---|
-| `index.html` | **Decrypt links** — paste an encrypted link, pick a Google account, copy the folder. Set `showBuilder = true` in the inline config to reveal the builder link. Optional: `encryptedIdPrefix`, `defaultClientId` / `defaultClientSecret` (rclone OAuth). |
-| `build.html` | **Builder** — enter a 32-byte base64 encryption key and your decrypt server URL(s) or server list(s), then download `gd.zip` with ready-to-deploy decrypters. |
+| `server/` | Express backend: protocol v4 routes, OAuth, SQLite cache, rate limiting |
+| `shared/` | `crypto.js` — AES-256-GCM ES module used by the server (and tests) |
+| `public/` | Static frontend served by the backend |
+| `public/index.html` | **Decrypt links** — paste an encrypted link, pick a Google account, copy the folder. `?dev=1` loads readable `main.js`; otherwise `main.obf.js`. `BACKEND_URL` const points at the backend (`''` = same origin). |
+| `public/main.js` | Deobfuscated, editable copy engine (regenerate `main.obf.js` from it) |
+| `public/build.html` | **Legacy builder** (kept as-is) — generates `gd.zip` decrypters |
+| `public/templates/` | **Legacy** Cloudflare Worker / PHP / static decrypters |
+| `tests/` | `node:test` suites: crypto, protocol, oauth, cache, rate limit |
 
-## What the builder generates (`gd.zip`)
+## API (protocol v4)
 
-- `STATIC_ENCRYPTION/encrypt.html` — static page version
-- `WORKER/worker.js` — Cloudflare Worker version (optional `/encrypt` endpoint)
-- `PHP/decrypt.php`, `PHP/encrypt.php`, `PHP/.htaccess` — PHP version
-- `key.txt` — your encryption key (keep it private)
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | `{status:"ok", version:4}` |
+| `POST /info` | `{auth, folder, pageToken?}` → folder listing (IDs re-encrypted) |
+| `POST /clone` | `{auth, files[], destination}` → copies files |
+| `GET /encrypt` | HTML page that encrypts folder IDs (self-referencing links) |
+| `POST /encrypt` | `{folder}` → `{status:"ok", data:"<encrypted>"}` |
+| `GET /oauth/config` | `{clientId}` for the browser login flow |
+| `POST /oauth/token` | `{code\|refresh_token, grant_type, redirect_uri?}` → Google tokens |
 
-Server lists can be hosted as a GitHub Gist, `p.teknik.io`, Pastebin raw, or any
-raw HTTPS/HTTP URL.
+All protocol responses carry `{status, version:4}`; errors use
+`{status:"error", reason, version:4}`.
+
+## Quick start
+
+```bash
+cp .env.example .env   # fill in EFC_KEY + Google OAuth credentials
+npm install
+npm test
+npm run dev            # http://localhost:3000
+```
+
+`EFC_KEY` (base64, 32 bytes):
+```bash
+node -e "import('./shared/crypto.js').then(m => m.generateKey().then(console.log))"
+```
+
+Docker:
+```bash
+docker compose up --build
+```
 
 ## Security notes
 
 - The app itself warns: **always use a dummy Google account**, never your main one.
-- The encryption key lives in the generated files — whoever holds `key.txt` (or a
-  generated decrypter) can resolve your encrypted links.
-- `main.obf.js` is the obfuscated copy engine; `common.js` holds the shared
-  AES-GCM encrypt/decrypt helpers.
-- `main.js` is the **deobfuscated, editable source** of `main.obf.js`
-  (regenerated 2026-09-27; `node --check` passes). To change copy behavior,
-  edit `main.js`, then re-obfuscate with
-  [javascript-obfuscator](https://github.com/javascript-obfuscator/javascript-obfuscator)
-  to regenerate `main.obf.js`, which is what `index.html` loads.
+- `EFC_KEY` resolves your encrypted links — keep it private, never commit `.env`.
+- `public/build.html` and `public/templates/` are legacy; the Node backend
+  replaces the generated decrypters.
+- Copying through a "dummy" account is still unimplemented (inherited limitation).
 
-## Development
+## Regenerating the obfuscated frontend
 
-Open `index.html?dev=1` to run against the readable `main.js` instead of the
-obfuscated `main.obf.js`. Production (no query param) keeps loading
-`main.obf.js`, so existing behavior is unchanged.
+Edit `public/main.js`, then:
+```bash
+npx javascript-obfuscator public/main.js --output public/main.obf.js
+```
 
 ## Stack
 
-Vanilla JS + jQuery, Bootstrap 4, JSZip, Cloudflare Workers / PHP templates.
-Dark mode included.
+Node 20, Express, better-sqlite3, WebCrypto AES-256-GCM, vanilla JS +
+jQuery + Bootstrap 4 frontend. Dark mode included.

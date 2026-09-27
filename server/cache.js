@@ -11,13 +11,19 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = process.env.CACHE_DB || path.join(__dirname, '..', 'cache.db');
+function dbPath() {
+  return process.env.CACHE_DB || path.join(__dirname, '..', 'cache.db');
+}
 
 let db = null;
+let dbPathUsed = null;
 
 function getDb() {
-  if (!db) {
-    db = new Database(DB_PATH);
+  const p = dbPath();
+  if (!db || dbPathUsed !== p) {
+    if (db) db.close();
+    db = new Database(p);
+    dbPathUsed = p;
     db.exec(`CREATE TABLE IF NOT EXISTS info_cache (
       key TEXT PRIMARY KEY,
       data TEXT NOT NULL,
